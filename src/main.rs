@@ -5,6 +5,12 @@ use candid::{Principal, Encode, Decode};
 // use crate::did::{};
 use crate::utils::build_agent;
 
+pub const USERA: &str = "identity/1.pem";
+pub const USERB: &str = "identity/2.pem";
+pub const USERC: &str = "identity/3.pem";
+pub const USERD: &str = "identity/4.pem";
+pub const USERE: &str = "identity/5.pem";
+
 // pub async fn call_canister() {
 //     let canister = Principal::from_text("").unwrap();
     
