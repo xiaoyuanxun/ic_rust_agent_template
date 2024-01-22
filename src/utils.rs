@@ -1,6 +1,8 @@
 use ic_agent::{identity, agent::http_transport};
 use candid::Principal;
 use ic_agent::Identity;
+use std::fs::File;
+use std::io::Read;
 
 const ICP_LEDGER_CANISTER_TEXT: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 
@@ -42,4 +44,41 @@ pub async fn build_local_agent(pem_identity_path: &str) -> ic_agent::Agent {
 pub fn get_principal(pem_identity_path: &str) -> Principal {
     let identity = identity::Secp256k1Identity::from_pem_file(String::from(pem_identity_path)).expect("not found identity pem");
     identity.sender().unwrap()
+}
+
+pub fn read_file_to_vec(file_path: &str) -> Vec<u8> {
+    let mut file = File::open(file_path).unwrap();
+
+    let mut buffer = Vec::new();
+
+    file.read_to_end(&mut buffer).unwrap();
+
+    buffer
+}
+
+// sub account = [sun_account_id_size, principal_blob, 0,0,···]
+pub fn principal_to_subaccount(pr: Principal) -> Vec<u8> {
+    let pr_slice = pr.as_slice();
+    let mut buffer: Vec<u8>= Vec::new();
+    buffer.push(pr_slice.len() as u8);
+    for i in pr_slice.iter() {
+        buffer.push(i.clone())
+    }
+    let mut index = buffer.len();
+    while index < 32 {
+        buffer.push(0);
+        index += 1;
+    }
+    buffer
+}
+
+pub fn ext_get_token_identitier(
+    canister_id: Principal,
+    token_index: u32
+) -> Principal {
+    let mut result = [0u8; 18];
+    result[0..4].copy_from_slice(b"\x0Atid");
+    result[4..14].copy_from_slice(canister_id.as_slice());
+    result[14..18].copy_from_slice(&(token_index.clone()).to_be_bytes());
+    return Principal::try_from(&result.to_vec()).unwrap();
 }

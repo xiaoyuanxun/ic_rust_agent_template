@@ -66,7 +66,7 @@ pub enum ICRCTransferResult {
 pub async fn icrc1_transfer(
   icrc_canister: Principal,
   from_agent: ic_agent::Agent,
-  to: Principal,
+  to: Account,
   amount: usize,
   memo: Option<serde_bytes::ByteBuf>,
 ) -> Result<Nat, TransferError> {
@@ -76,10 +76,7 @@ pub async fn icrc1_transfer(
       "icrc1_transfer"
     )
     .with_arg(Encode!(&ICRCTransferArg {
-      to: Account {
-        owner: to,
-        subaccount: None,
-      },
+      to: to,
       fee: None,
       memo: memo,
       from_subaccount: None,
