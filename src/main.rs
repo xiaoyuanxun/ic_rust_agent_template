@@ -1,9 +1,9 @@
 mod did;
 mod utils;
+mod icrc_did;
 use candid::{Principal, Encode, Decode};
 
 // use crate::did::{};
-use crate::utils::build_agent;
 
 pub const USERA: &str = "identity/1.pem";
 pub const USERB: &str = "identity/2.pem";
@@ -28,7 +28,10 @@ pub const USERE: &str = "identity/5.pem";
 //     println!("result : {:?}", result);
 // }
 
+
+
 #[tokio::main]
 async fn main() {
 
 }
+

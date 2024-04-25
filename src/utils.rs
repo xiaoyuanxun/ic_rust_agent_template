@@ -3,6 +3,8 @@ use candid::Principal;
 use ic_agent::Identity;
 use std::fs::File;
 use std::io::Read;
+use candid::{Nat, Int};
+use crate::icrc_did;
 
 const ICP_LEDGER_CANISTER_TEXT: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 
@@ -72,6 +74,9 @@ pub fn principal_to_subaccount(pr: Principal) -> Vec<u8> {
     buffer
 }
 
+
+// pub fn principal_to_hex(pr: Principal) -> 
+
 pub fn ext_get_token_identitier(
     canister_id: Principal,
     token_index: u32
@@ -81,4 +86,48 @@ pub fn ext_get_token_identitier(
     result[4..14].copy_from_slice(canister_id.as_slice());
     result[14..18].copy_from_slice(&(token_index.clone()).to_be_bytes());
     return Principal::try_from(&result.to_vec()).unwrap();
+}
+
+
+pub fn nat_to_i128(num: Nat) -> i128 {
+    i128::from_str_radix(num.to_string().replace("_", "").as_str(), 10).unwrap()
+} 
+
+pub fn nat_to_u128(num: Nat) -> u128 {
+    u128::from_str_radix(num.to_string().replace("_", "").as_str(), 10).unwrap()
+} 
+
+pub fn int_to_i128(num: Int) -> i128 {
+    i128::from_str_radix(num.to_string().replace("_", "").as_str(), 10).unwrap()
+}
+
+pub fn int_to_u128(num: Int) -> u128 {
+    u128::from_str_radix(num.to_string().replace("_", "").as_str(), 10).unwrap()
+}
+
+pub fn is_need_approve(need_amount: u128, allowance: icrc_did::Allowance) -> bool {
+    // if allowance < need_amount
+    if allowance.allowance.lt(&need_amount) {
+        return true;
+    }
+
+    if let Some(expiry) = allowance.expires_at {
+        let now = ic_cdk::api::time();
+        if now >= expiry {
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn cketh_decode_principal_to_bytes32_string(
+    pr: Principal
+) -> String {
+    let n = pr.as_slice().len();
+    assert!(n <= 29);
+    let mut fixed_bytes = [0u8; 32];
+    fixed_bytes[0] = n as u8;
+    fixed_bytes[1..=n].copy_from_slice(pr.as_slice());
+    format!("0x{}", hex::encode(fixed_bytes).as_str())
 }

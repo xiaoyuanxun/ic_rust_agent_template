@@ -1,4 +1,5 @@
 use candid::{CandidType, Deserialize, Principal, Encode, Decode, Nat};
+use crate::utils;
 
 #[derive(CandidType, Deserialize, Debug)]
 pub struct Account {
@@ -29,10 +30,29 @@ pub struct ApproveArgs {
 }
 
 #[derive(CandidType, Deserialize, Debug)]
+pub enum ApproveError {
+  GenericError{ message: String, error_code: candid::Nat },
+  TemporarilyUnavailable,
+  Duplicate{ duplicate_of: candid::Nat },
+  BadFee{ expected_fee: candid::Nat },
+  AllowanceChanged{ current_allowance: candid::Nat },
+  CreatedInFuture{ ledger_time: u64 },
+  TooOld,
+  Expired{ ledger_time: u64 },
+  InsufficientFunds{ balance: candid::Nat },
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum ApproveResult { Ok(candid::Nat), Err(ApproveError) }
+
+#[derive(CandidType, Deserialize, Debug)]
 pub struct AllowanceArgs {
     pub account: Account, 
     pub spender: Account 
 }
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct Allowance { pub allowance: candid::Nat, pub expires_at: Option<u64> }
 
 #[derive(CandidType, Deserialize, Debug)]
 pub struct TransferFromArgs {
@@ -90,4 +110,40 @@ pub async fn icrc1_transfer(
     ICRCTransferResult::Ok(block_index) => Ok(block_index),
     ICRCTransferResult::Err(err) => Err(err)
   }
+}
+
+
+pub async fn icrc2_approve(
+  from_agent: ic_agent::Agent,
+  icrc_canister: Principal,
+  args: ApproveArgs
+) -> Result<u128, ApproveError> {
+  let response_blob = from_agent
+    .update(
+      &icrc_canister, 
+      "icrc2_approve"
+    )
+    .with_arg(Encode!(&args).unwrap())
+    .call_and_wait()
+    .await.unwrap();
+  match Decode!(&response_blob, ApproveResult).unwrap() {
+      ApproveResult::Ok(tx_index) => Ok(utils::nat_to_u128(tx_index)),
+      ApproveResult::Err(err) => Err(err)
+  }
+}
+
+pub async fn icrc2_allowance(
+  from_agent: ic_agent::Agent,
+  icrc_canister: Principal,
+  args: AllowanceArgs
+) -> Allowance {
+  let response_blob = from_agent
+    .query(
+      &icrc_canister, 
+      "icrc2_allowance"
+    )
+    .with_arg(Encode!(&args).unwrap())
+    .call().await.unwrap();
+
+  Decode!(&response_blob, Allowance).unwrap()
 }
